@@ -2,6 +2,8 @@
 ## Privacy-first YouTube client for Kodi
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/D1D11UQ0IO)
+[![Patreon](https://img.shields.io/badge/Patreon-support-orange)](https://www.patreon.com/c/twilight0)
+[![PayPal](https://img.shields.io/badge/PayPal-donate-blue)](https://www.paypal.com/paypalme/AliveGR)
 
 ![](https://raw.githubusercontent.com/Twilight0/plugin.video.newpipe/master/icon.png)
 
