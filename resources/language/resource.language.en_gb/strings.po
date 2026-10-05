@@ -1,0 +1,133 @@
+# Addon Name: NewPipe
+# Addon id: plugin.video.newpipe
+# Addon Provider: Twilight0
+msgid ""
+msgstr ""
+"Project-Id-Version: NewPipe\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: en\n"
+
+msgctxt "#30001"
+msgid "Search"
+msgstr ""
+
+msgctxt "#30002"
+msgid "Subscriptions"
+msgstr ""
+
+msgctxt "#30003"
+msgid "Subscription feed"
+msgstr ""
+
+msgctxt "#30004"
+msgid "Watch history"
+msgstr ""
+
+msgctxt "#30005"
+msgid "Settings"
+msgstr ""
+
+msgctxt "#30006"
+msgid "New search..."
+msgstr ""
+
+msgctxt "#30007"
+msgid "Clear history"
+msgstr ""
+
+msgctxt "#30008"
+msgid "Forget this search"
+msgstr ""
+
+msgctxt "#30010"
+msgid "Videos"
+msgstr ""
+
+msgctxt "#30011"
+msgid "Channels"
+msgstr ""
+
+msgctxt "#30012"
+msgid "Playlists"
+msgstr ""
+
+msgctxt "#30013"
+msgid "Subscribe"
+msgstr ""
+
+msgctxt "#30014"
+msgid "Subscribed"
+msgstr ""
+
+msgctxt "#30015"
+msgid "Unsubscribe"
+msgstr ""
+
+msgctxt "#30016"
+msgid "Videos"
+msgstr ""
+
+msgctxt "#30017"
+msgid "Shorts"
+msgstr ""
+
+msgctxt "#30018"
+msgid "Live"
+msgstr ""
+
+msgctxt "#30020"
+msgid "General"
+msgstr ""
+
+msgctxt "#30021"
+msgid "Results per page"
+msgstr ""
+
+msgctxt "#30022"
+msgid "Feed items per channel"
+msgstr ""
+
+msgctxt "#30023"
+msgid "Audio only"
+msgstr ""
+
+msgctxt "#30024"
+msgid "Debug (disable cache)"
+msgstr ""
+
+msgctxt "#30025"
+msgid "Trending"
+msgstr ""
+
+msgctxt "#30026"
+msgid "Go to channel"
+msgstr ""
+
+msgctxt "#30027"
+msgid "Bookmarks"
+msgstr ""
+
+msgctxt "#30028"
+msgid "Bookmark"
+msgstr ""
+
+msgctxt "#30029"
+msgid "Remove bookmark"
+msgstr ""
+
+msgctxt "#30030"
+msgid "Bookmarked"
+msgstr ""
+
+msgctxt "#30031"
+msgid "Clear cache"
+msgstr ""
+
+msgctxt "#30032"
+msgid "Cache cleared"
+msgstr ""
+
+msgctxt "#30033"
+msgid "Cache clear failed"
+msgstr ""

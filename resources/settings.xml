@@ -1,0 +1,49 @@
+<?xml version="1.0" ?>
+<settings version="2">
+	<section id="plugin.video.newpipe">
+		<category id="general" label="30020">
+			<group id="1" label="">
+				<setting id="results_per_page" type="integer" label="30021">
+					<level>0</level>
+					<default>25</default>
+					<constraints>
+						<minimum>5</minimum>
+						<maximum>50</maximum>
+						<step>5</step>
+					</constraints>
+					<control type="spinner" format="integer"/>
+				</setting>
+				<setting id="feed_per_channel" type="integer" label="30022">
+					<level>0</level>
+					<default>5</default>
+					<constraints>
+						<minimum>1</minimum>
+						<maximum>20</maximum>
+						<step>1</step>
+					</constraints>
+					<control type="spinner" format="integer"/>
+				</setting>
+				<setting id="audio_only" type="boolean" label="30023">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="debug" type="boolean" label="30024">
+					<level>2</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="clear_cache" type="action" label="30031">
+					<level>0</level>
+					<data>RunPlugin(plugin://plugin.video.newpipe/?action=clear_cache)</data>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<control type="button" format="action">
+						<close>true</close>
+					</control>
+				</setting>
+			</group>
+		</category>
+	</section>
+</settings>
