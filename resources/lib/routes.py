@@ -387,7 +387,16 @@ def _channel_cm(channel_url, channel_title=''):
     }]
 
 
-def _video_item(item, channel_url='', channel_title='', profile='default', music_random=False):
+def _known_subs():
+    """Subscription urls, loaded once per listing instead of per video."""
+    try:
+        return {s.get('url') for s in storage.get_subscriptions() if s.get('url')}
+    except Exception:
+        return set()
+
+
+def _video_item(item, channel_url='', channel_title='', profile='default', music_random=False,
+               known_subs=None):
     video_id = _video_id(item.get('url', ''))
     title = item.get('title') or _text(30186, 'Unknown')
     if item.get('is_live'):
@@ -406,7 +415,12 @@ def _video_item(item, channel_url='', channel_title='', profile='default', music
             },
         })
     if channel_url:
-        known = any(s.get('url') == channel_url for s in storage.get_subscriptions())
+        # Subscriptions are loaded once per listing by the caller (known_subs);
+        # reading the file per video made big channels crawl.
+        if known_subs is None:
+            known = any(s.get('url') == channel_url for s in storage.get_subscriptions())
+        else:
+            known = channel_url in known_subs
         cm.append({
             'title': 30015 if known else 30013,
             'query': {'action': 'unsubscribe' if known else 'subscribe',
@@ -535,9 +549,10 @@ def trending(query=None, page=1):
         query = _LEGACY_TRENDING_QUERIES.get(query, query)
     music_context = str(query).strip().lower() == 'music' and _random_music_enabled()
     query = localization.category_query(query)
+    known_subs = _known_subs()
     _build_paged(
         lambda limit: yt.trending_videos(query, limit=limit),
-        lambda entry: _video_item(*entry, music_random=music_context),
+        lambda entry: _video_item(*entry, music_random=music_context, known_subs=known_subs),
         'trending',
         {'query': query},
         page=page,
@@ -570,7 +585,9 @@ def random_music(page=1):
     end = start + per_page
     if not paginate:
         start, end = 0, len(source)
-    items = [_video_item(*entry, music_random=True) for entry in source[start:end]]
+    known_subs = _known_subs()
+    items = [_video_item(*entry, music_random=True, known_subs=known_subs)
+             for entry in source[start:end]]
     if paginate and len(source) > end:
         items.append(_next_page('random_music', page))
     _build(items, content='videos')
@@ -591,9 +608,10 @@ def live(query=None, page=1):
     else:
         query = _LEGACY_LIVE_QUERIES.get(query, query)
     query = localization.category_query(query, live=True)
+    known_subs = _known_subs()
     _build_paged(
         lambda limit: _live_results(query, limit),
-        lambda entry: _video_item(*entry),
+        lambda entry: _video_item(*entry, known_subs=known_subs),
         'live',
         {'query': query},
         page=page,
@@ -604,9 +622,10 @@ def live(query=None, page=1):
 def trailers(page=1):
     """List trailers in the configured language without a selection dialog."""
     query = _trailer_query()
+    known_subs = _known_subs()
     _build_paged(
         lambda limit: yt.trailer_videos(query, limit=limit),
-        lambda entry: _video_item(*entry, profile='trailer'),
+        lambda entry: _video_item(*entry, profile='trailer', known_subs=known_subs),
         'trailers',
         page=page,
     )
@@ -678,9 +697,10 @@ def search_results(url, kind=None, page=1):
         _list_playlist_results(url, page=page)
     elif kind == 'trailer':
         trailer_query = _trailer_search_query(url)
+        known_subs = _known_subs()
         _build_paged(
             lambda limit: yt.trailer_videos(trailer_query, limit=limit),
-            lambda entry: _video_item(*entry, profile='trailer'),
+            lambda entry: _video_item(*entry, profile='trailer', known_subs=known_subs),
             'search_results',
             {'url': url, 'kind': 'trailer'},
             page=page,
@@ -708,9 +728,11 @@ def search_results(url, kind=None, page=1):
                 return False
             return music_search['active'] or _is_music_video(item, search_hint=url)
 
+        known_subs = _known_subs()
         _build_paged(
             fetch_search,
-            lambda entry: _video_item(*entry, music_random=is_music_result(entry)),
+            lambda entry: _video_item(*entry, music_random=is_music_result(entry),
+                                      known_subs=known_subs),
             'search_results',
             {'url': url, 'kind': 'video'},
             page=page,
@@ -752,7 +774,11 @@ def channel(url, title=''):
         _route_folder(30017, 'channel_videos', _icon('search'), url=url, tab='shorts'),
         _route_folder(30018, 'channel_videos', _icon('live'), url=url, tab='streams'),
         _route_folder(30012, 'channel_playlists', _icon('bookmarks'), url=url),
-        dict(toggle, action='unsubscribe' if known else 'subscribe', isFolder='False', isPlayable='False'),
+        # The row-level toggle needs its own top-level url: _item() strips
+        # dict-type 'query' payloads from rows, so without this the action
+        # dispatches without url and subscribe() blows up (TypeError).
+        dict(toggle, action='unsubscribe' if known else 'subscribe', url=url,
+             isFolder='False', isPlayable='False'),
     ])
 
 
@@ -766,11 +792,13 @@ def channel_videos(url, tab='videos', page=1, query=None):
     def is_music_result(entry):
         return _random_music_enabled() and _is_music_video(_entry_video(entry))
 
+    known_subs = _known_subs()
     _build_paged(
         lambda limit: yt.channel_videos(url, tab=tab, limit=limit),
         lambda video: _video_item(video, channel_url=url,
                                   channel_title=known.get('title') if known else '',
-                                  music_random=is_music_result(video)),
+                                  music_random=is_music_result(video),
+                                  known_subs=known_subs),
         'channel_videos',
         {'url': url, 'tab': tab},
         page=page,
@@ -926,11 +954,12 @@ def my_videos(page=1):
     )
 
 
-def _account_video_item(entry, remove_watch_later=False):
+def _account_video_item(entry, remove_watch_later=False, known_subs=None):
     item = _video_item(
         entry,
         entry.get('channel_url', ''),
         entry.get('channel_title', ''),
+        known_subs=known_subs,
     )
     if remove_watch_later:
         item['cm'] = [menu for menu in item.get('cm', [])
@@ -951,9 +980,10 @@ def subscription_feed(page=1):
         # Existing manual channel subscriptions still work without a TV login.
         feed(page)
         return
+    known_subs = _known_subs()
     _build_paged(
         lambda limit: source,
-        _account_video_item,
+        lambda entry: _account_video_item(entry, known_subs=known_subs),
         'subscription_feed',
         page=page,
     )
@@ -974,9 +1004,11 @@ def watch_later(page=1):
     """Account Watch Later snapshot plus the private local fallback list."""
     source = _unique_videos(
         storage.get_youtube_library('watch_later'), storage.get_watch_later())
+    known_subs = _known_subs()
     _build_paged(
         lambda limit: source,
-        lambda entry: _account_video_item(entry, remove_watch_later=True),
+        lambda entry: _account_video_item(entry, remove_watch_later=True,
+                                          known_subs=known_subs),
         'watch_later',
         page=page,
     )
@@ -1025,7 +1057,10 @@ def account_history(page=1):
     if not source:
         history(page)
         return
-    _build_paged(lambda limit: source, _account_video_item, 'account_history', page=page)
+    known_subs = _known_subs()
+    _build_paged(lambda limit: source,
+                 lambda entry: _account_video_item(entry, known_subs=known_subs),
+                 'account_history', page=page)
 
 
 @urldispatcher.register('youtube_connect')
@@ -1113,7 +1148,7 @@ def youtube_login_menu():
 
 
 @urldispatcher.register('youtube_show_qr', kwargs=['url'])
-def youtube_show_qr(url):
+def youtube_show_qr(url=''):
     """Use Kodi's native aspect-ratio-aware picture viewer for the QR."""
     if url:
         safe_url = url.replace('"', '')
@@ -1272,9 +1307,9 @@ def youtube_disconnect():
         kodi.refresh()
 
 
-def _feed_item(entry):
+def _feed_item(entry, known_subs=None):
     video, channel_url, channel_title = entry
-    item = _video_item(video, channel_url, channel_title)
+    item = _video_item(video, channel_url, channel_title, known_subs=known_subs)
     item['title'] = '{0} - {1}'.format(channel_title, item['title'])
     return item
 
@@ -1283,13 +1318,17 @@ def _feed_item(entry):
 def feed(page=1):
     per_channel = _limit(default_key='feed_per_channel', fallback=5)
     items = []
-    for subscription in storage.get_subscriptions():
+    subscriptions = storage.get_subscriptions()
+    known_subs = {s.get('url') for s in subscriptions if s.get('url')}
+    for subscription in subscriptions:
         try:
             videos = yt.channel_videos(subscription.get('url'), limit=per_channel)[:per_channel]
             items.extend((video, subscription.get('url'), subscription.get('title') or '') for video in videos)
         except Exception as exc:
             log('NewPipe feed error for {0}: {1}'.format(subscription.get('url'), exc))
-    _build_paged(lambda limit: items, _feed_item, 'feed', page=page)
+    _build_paged(lambda limit: items,
+                 lambda entry: _feed_item(entry, known_subs=known_subs),
+                 'feed', page=page)
 
 
 def _history_item(entry):
