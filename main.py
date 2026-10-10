@@ -15,8 +15,26 @@ from urldispatcher import urldispatcher
 from resources.lib import routes  # noqa: F401
 
 
+_STATE_PREFIX = 'np:'
+
+
+def _params(query):
+    """Expand the compact route state carried in Tulip's ``query`` field.
+
+    Folder routes encode page number, search kind and channel tab as one
+    URL-encoded ``np:...`` payload (built by routes._state); restore its
+    key/value pairs so paged routes receive real parameters.
+    """
+    params = dict(parse_qsl(query[1:]))
+    state = params.get('query', '')
+    if state.startswith(_STATE_PREFIX):
+        params.pop('query', None)
+        params.update(dict(parse_qsl(state[len(_STATE_PREFIX):])))
+    return params
+
+
 def run(argv):
-    params = dict(parse_qsl(argv[2][1:]))
+    params = _params(argv[2])
     urldispatcher.dispatch(params.get('action') or 'root', params)
 
 

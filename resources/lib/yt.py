@@ -1,86 +1,143 @@
 # -*- coding: utf-8 -*-
-
 # NewPipe Addon
 # Author Twilight0
 # SPDX-License-Identifier: GPL-3.0-only
-# See LICENSES/GPL-3.0-only for more information.
+#
+# Browsing uses Scrapetube page scraping, with no API key or account. Results
+# are cache-keyed by language/country. Video listings deliberately perform one
+# YouTube request chain only: prior builds fetched each page twice merely to add
+# a channel context-menu link, which made page changes unnecessarily slow.
+import xbmc
 
-# All YouTube browsing goes through scrapetube (page scraping, no API key,
-# no account). Results are cached with unicache; durations are in minutes.
-from scrapetube.wrapper import list_search, list_channel_videos, list_playlist_videos, list_playlists
-from scrapetube.scrapetube import get_search, search_dict, _safe_get
+from scrapetube.wrapper import (
+    list_search,
+    list_channel_videos,
+    list_playlist_videos,
+    list_playlists,
+)
 
 from .constants import cache_function, cache_duration
+from . import localization
+
+
+def configure():
+    """Set the NewPipe-style YouTube content locale for the current request."""
+    return localization.configure()
 
 
 @cache_function(cache_duration(15))
+def _search(query, limit=25, sort='relevance', locale='pt:BR'):
+    localization.configure()
+    results = list_search(query, limit=limit, sleep=0, sort_by=sort) or []
+    xbmc.log('[NewPipe] scrape requested={0} received={1} sort={2} locale={3}'.format(
+        limit, len(results), sort, locale), xbmc.LOGINFO)
+    return results
+
+
 def search(query, limit=25, sort='relevance'):
-    return list_search(query, limit=limit, sleep=0, sort_by=sort)
+    return _search(query, limit=limit, sort=sort, locale=configure())
 
 
-def _channel_url(raw):
-    """First channel browseEndpoint in a raw search item -> /channel/ URL."""
-    for endpoint in search_dict(raw, 'browseEndpoint'):
-        browse_id = (endpoint or {}).get('browseId', '')
-        if browse_id.startswith('UC'):
-            return 'https://www.youtube.com/channel/' + browse_id
-    return ''
-
-
-def _channel_name(raw, url):
-    owner = raw.get('ownerText') or raw.get('shortBylineText') or raw.get('longBylineText') or {}
-    name = owner.get('simpleText') or _safe_get(owner, 'runs', 0, 'text', default='')
-    if name:
-        return name
-    for endpoint in search_dict(raw, 'browseEndpoint'):
-        base = (endpoint or {}).get('canonicalBaseUrl', '')
-        if base.startswith('/@'):
-            return base[2:]
-    return url
-
-
-def _enriched(query, limit, sort):
-    # Raw items keep browseEndpoint channel urls; wrapper dicts keep the
-    # Kodi-friendly title/url/image/duration shape. Zipped by videoId.
-    wrapped = {item.get('url', '')[-11:]: item for item in search(query, limit=limit, sort=sort)}
-    enriched = []
-    for raw in get_search(query, limit=limit, sleep=0, sort_by=sort):
-        video_id = raw.get('videoId', '')
-        item = wrapped.get(video_id)
-        if not item:
+def _video_results(query, limit, sort, locale):
+    """Return Kodi video tuples after one scraping pass, without duplicate cards."""
+    seen_video_ids = set()
+    results = []
+    for item in _search(query, limit=limit, sort=sort, locale=locale):
+        video_id = (item.get('url') or '')[-11:]
+        if not video_id or video_id in seen_video_ids:
             continue
-        url = _channel_url(raw)
-        enriched.append((item, url, _channel_name(raw, url)))
-    return enriched
+        seen_video_ids.add(video_id)
+        # The channel URL used only for a context-menu shortcut. Avoiding a
+        # second raw YouTube query has a far larger benefit for page latency.
+        results.append((item, '', ''))
+        if len(results) >= limit:
+            break
+    return results
 
 
 @cache_function(cache_duration(15))
+def _search_videos(query, limit=25, sort='relevance', locale='pt:BR'):
+    return _video_results(query, limit, sort, locale)
+
+
 def search_videos(query, limit=25, sort='relevance'):
-    return _enriched(query, limit, sort)
+    return _search_videos(query, limit=limit, sort=sort, locale=configure())
 
 
 @cache_function(cache_duration(15))
+def _search_playlists(query, limit=25, locale='pt:BR'):
+    localization.configure()
+    return list_search(query, limit=limit, sleep=0, results_type='playlist') or []
+
+
+def search_playlists(query, limit=25):
+    return _search_playlists(query, limit=limit, locale=configure())
+
+
+@cache_function(cache_duration(15))
+def _trending_videos(query, limit=25, locale='pt:BR'):
+    # YouTube's legacy combined trending feed is no longer reliable. Do not
+    # emulate it with global view-count sorting: that turns "Music" into a
+    # list dominated by the largest unrelated markets. Use the localized
+    # category query with relevance under the configured hl/gl locale.
+    return _video_results(
+        localization.regional_category_query(query), limit, 'relevance', locale)
+
+
 def trending_videos(query, limit=25):
-    # No combined trending page exists anymore (FEtrending is dead server-side);
-    # per-category view-count-sorted search is the closest anonymous equivalent.
-    return _enriched(query, limit, 'view_count')
+    return _trending_videos(query, limit=limit, locale=configure())
 
 
 @cache_function(cache_duration(10))
+def _live_videos(query, limit=25, locale='pt:BR'):
+    return _video_results(
+        localization.regional_category_query(query), limit, 'relevance', locale)
+
+
 def live_videos(query, limit=25):
-    return _enriched(query, limit, 'relevance')
+    return _live_videos(query, limit=limit, locale=configure())
+
+
+@cache_function(cache_duration(15))
+def _trailer_videos(query, limit=25, sort='upload_date', locale='pt:BR'):
+    # Trailer language is expressed in the query itself. Do not append the
+    # configured country suffix used for broad Trending categories.  Search by
+    # upload date so newly released trailers always appear before old results.
+    # ``sort`` is explicit in the cached function signature to prevent a
+    # relevance-ordered cache entry from an older build being reused.
+    return _video_results(query, limit, sort, locale)
+
+
+def trailer_videos(query, limit=25):
+    return _trailer_videos(
+        query, limit=limit, sort='upload_date', locale=configure())
 
 
 @cache_function(cache_duration(30))
-def channel_videos(url, tab='videos', limit=25):
+def _channel_videos(url, tab='videos', limit=25, locale='pt:BR'):
+    localization.configure()
     return list_channel_videos(channel_url=url, limit=limit, sleep=0, content_type=tab)
 
 
+def channel_videos(url, tab='videos', limit=25):
+    return _channel_videos(url, tab=tab, limit=limit, locale=configure())
+
+
 @cache_function(cache_duration(60))
-def channel_playlists(url):
-    return list_playlists(url.rstrip('/') + '/playlists')
+def _channel_playlists(url, limit=25, locale='pt:BR'):
+    localization.configure()
+    return list_playlists(url.rstrip('/') + '/playlists', limit=limit, sleep=0)
+
+
+def channel_playlists(url, limit=25):
+    return _channel_playlists(url, limit=limit, locale=configure())
 
 
 @cache_function(cache_duration(30))
+def _playlist_videos(playlist_id, limit=50, locale='pt:BR'):
+    localization.configure()
+    return list_playlist_videos(playlist_id, limit=limit, sleep=0)
+
+
 def playlist_videos(playlist_id, limit=50):
-    return list_playlist_videos(playlist_id, sleep=0)
+    return _playlist_videos(playlist_id, limit=limit, locale=configure())

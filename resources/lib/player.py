@@ -57,7 +57,18 @@ def _isa_enabled():
         return False
 
 
-def play(video_id, title='', image=''):
+def _chooser_family():
+    """Map the direct_max_height setting to ISA's resolution families."""
+    try:
+        height = int(kodi.setting('direct_max_height') or 720)
+    except (TypeError, ValueError):
+        height = 720
+    return 480 if height <= 480 else 720 if height <= 720 else 1080
+
+
+def play(video_id, title='', image='', profile=None):
+    # 'profile' (default/trailer/music) selects the quality/engine path in
+    # engines that support it; the ResolveURL path ignores it.
     audio_only = kodi.setting('audio_only') == 'true'
     stream = resolve(video_id, audio_only=audio_only)
 
@@ -71,10 +82,26 @@ def play(video_id, title='', image=''):
         stream, _, headers = stream.rpartition('|')
         stream = '|'.join([stream, urlencode(dict(parse_qsl(headers)))])
 
+    base = stream.split('|', 1)[0].lower()
+    is_hls = ('.m3u8' in base or '/manifest/hls' in base) and _isa_enabled()
     dash = ('.mpd' in stream or 'dash' in stream) and _isa_enabled()
 
     log('NewPipe playing: ' + stream)
-    directory.resolve(
-        stream, meta={'title': title}, icon=image,
-        dash=bool(dash), manifest_type='mpd' if dash else None
-    )
+    if is_hls:
+        # Pin ISA's chooser to the configured family instead of letting it
+        # follow the display resolution (tulip inputstream_properties support).
+        family = _chooser_family()
+        directory.resolve(
+            stream, meta={'title': title}, icon=image,
+            dash=True, manifest_type='hls', inputstream_type='adaptive',
+            mimetype='application/x-mpegURL',
+            inputstream_properties={
+                'inputstream.adaptive.stream_selection_type': 'fixed-res',
+                'inputstream.adaptive.chooser_resolution_max': '{0}p'.format(family),
+            },
+        )
+    else:
+        directory.resolve(
+            stream, meta={'title': title}, icon=image,
+            dash=bool(dash), manifest_type='mpd' if dash else None
+        )
