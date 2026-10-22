@@ -763,3 +763,39 @@ msgstr ""
 msgctxt "#30196"
 msgid "Up next: {0}"
 msgstr ""
+msgctxt "#30200"
+msgid "Menu"
+msgstr ""
+
+msgctxt "#30201"
+msgid "Show My YouTube"
+msgstr ""
+
+msgctxt "#30202"
+msgid "Show Search"
+msgstr ""
+
+msgctxt "#30203"
+msgid "Show Trending"
+msgstr ""
+
+msgctxt "#30204"
+msgid "Show Live"
+msgstr ""
+
+msgctxt "#30205"
+msgid "Show Bookmarks"
+msgstr ""
+
+msgctxt "#30206"
+msgid "Show History"
+msgstr ""
+
+msgctxt "#30207"
+msgid "Show Random music"
+msgstr ""
+
+msgctxt "#30208"
+msgid "Show Trailers"
+msgstr ""
+

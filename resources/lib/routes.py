@@ -472,24 +472,41 @@ def _channel_id(item):
     return item.get('channelId') or item.get('browseId') or ''
 
 
+def _visible(key, default='true'):
+    """Boolean main-menu visibility switch (settings → Menu tab)."""
+    return str(_setting(key, default)).strip().lower() == 'true'
+
+
+def _menu_entry(title, action, icon, visible_key, default='true'):
+    """Root menu row honouring its per-entry visibility toggle."""
+    if not _visible(visible_key, default):
+        return None
+    return {
+        'title': title, 'action': action, 'icon': icon, 'image': icon,
+        'isFolder': 'True', 'isPlayable': 'False',
+    }
+
+
 @urldispatcher.register('root')
 def root():
-    _build([
-        {'title': 30001, 'action': 'search', 'icon': _icon('search'), 'image': _icon('search'),
-         'isFolder': 'True', 'isPlayable': 'False'},
-        {'title': 30025, 'action': 'trending', 'icon': _icon('trending'), 'image': _icon('trending'),
-         'isFolder': 'True', 'isPlayable': 'False'},
-        {'title': 30191, 'action': 'random_music', 'icon': _icon('trending'), 'image': _icon('trending'),
-         'isFolder': 'True', 'isPlayable': 'False'},
-        {'title': 30018, 'action': 'live', 'icon': _icon('live'), 'image': _icon('live'),
-         'isFolder': 'True', 'isPlayable': 'False'},
-        {'title': 30051, 'action': 'trailers', 'icon': _icon('trending'), 'image': _icon('trending'),
-         'isFolder': 'True', 'isPlayable': 'False'},
-        {'title': 30084, 'action': 'subscriptions', 'icon': _icon('subscriptions'),
-         'image': _icon('subscriptions'), 'isFolder': 'True', 'isPlayable': 'False'},
-        {'title': 30005, 'action': 'open_settings', 'icon': _icon('settings'), 'image': _icon('settings'),
-         'isFolder': 'False', 'isPlayable': 'False'},
-    ])
+    # Order mirrors the reference design: account hub, search, discovery,
+    # then the local library folders. Random music / Trailers survive as
+    # opt-in toggles (settings → Menu).
+    _build(filter(None, [
+        _menu_entry(30084, 'subscriptions', _icon('subscriptions'), 'show_my_youtube'),
+        _menu_entry(30001, 'search', _icon('search'), 'show_search'),
+        _menu_entry(30025, 'trending', _icon('trending'), 'show_trending'),
+        _menu_entry(30018, 'live', _icon('live'), 'show_live'),
+        _menu_entry(30027, 'bookmarks', _icon('bookmarks'), 'show_bookmarks'),
+        _menu_entry(30004, 'history', _icon('history'), 'show_history'),
+        _menu_entry(30191, 'random_music', _icon('trending'), 'show_random_music', default='false'),
+        _menu_entry(30051, 'trailers', _icon('trending'), 'show_trailers', default='false'),
+        {
+            'title': 30005, 'action': 'open_settings', 'icon': _icon('settings'), 'image': _icon('settings'),
+            'cm': [{'title': 30031, 'query': {'action': 'clear_cache'}}],
+            'isFolder': 'False', 'isPlayable': 'False',
+        },
+    ]))
 
 
 @urldispatcher.register('open_settings')

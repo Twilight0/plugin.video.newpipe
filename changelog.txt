@@ -1,3 +1,9 @@
+[B]1.2.0[/B]
+- Main menu rework: My YouTube first, then Search, Trending, Live, Bookmarks and local History
+- A new Menu tab in settings toggles every folder; Random music and Trailers are now opt-in (off by default)
+- Settings menu item carries a Clear cache context action
+- Requires script.module.scrapetube 2.8.6 (unknown channel tabs yield empty folders instead of crashing)
+
 [B]1.1.0[/B]
 - Pagination control (Off/show-all, 10/25/50, default off); playlists hard-capped at 300
 - Watch Later list, per-item history removal, subscription channels/feed views, saved playlists, account history

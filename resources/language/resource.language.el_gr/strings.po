@@ -763,3 +763,39 @@ msgstr "Φόρτωση επόμενου τυχαίου κομματιού…"
 msgctxt "#30196"
 msgid "Up next: {0}"
 msgstr "Επόμενο: {0}"
+msgctxt "#30200"
+msgid "Menu"
+msgstr "Μενού"
+
+msgctxt "#30201"
+msgid "Show My YouTube"
+msgstr "Εμφάνιση «Το YouTube μου»"
+
+msgctxt "#30202"
+msgid "Show Search"
+msgstr "Εμφάνιση αναζήτησης"
+
+msgctxt "#30203"
+msgid "Show Trending"
+msgstr "Εμφάνιση δημοφιλών"
+
+msgctxt "#30204"
+msgid "Show Live"
+msgstr "Εμφάνιση ζωντανών"
+
+msgctxt "#30205"
+msgid "Show Bookmarks"
+msgstr "Εμφάνιση σελιδοδεικτών"
+
+msgctxt "#30206"
+msgid "Show History"
+msgstr "Εμφάνιση ιστορικού"
+
+msgctxt "#30207"
+msgid "Show Random music"
+msgstr "Εμφάνιση τυχαίας μουσικής"
+
+msgctxt "#30208"
+msgid "Show Trailers"
+msgstr "Εμφάνιση προεπισκοπήσεων"
+

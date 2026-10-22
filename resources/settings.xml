@@ -227,6 +227,50 @@
 				</setting>
 				</group>
 			</category>
+			<category id="menu" label="30200">
+				<group id="1" label="">
+					<setting id="show_my_youtube" type="boolean" label="30201">
+						<level>0</level>
+						<default>true</default>
+						<control type="toggle"/>
+					</setting>
+					<setting id="show_search" type="boolean" label="30202">
+						<level>0</level>
+						<default>true</default>
+						<control type="toggle"/>
+					</setting>
+					<setting id="show_trending" type="boolean" label="30203">
+						<level>0</level>
+						<default>true</default>
+						<control type="toggle"/>
+					</setting>
+					<setting id="show_live" type="boolean" label="30204">
+						<level>0</level>
+						<default>true</default>
+						<control type="toggle"/>
+					</setting>
+					<setting id="show_bookmarks" type="boolean" label="30205">
+						<level>0</level>
+						<default>true</default>
+						<control type="toggle"/>
+					</setting>
+					<setting id="show_history" type="boolean" label="30206">
+						<level>0</level>
+						<default>true</default>
+						<control type="toggle"/>
+					</setting>
+					<setting id="show_random_music" type="boolean" label="30207">
+						<level>0</level>
+						<default>false</default>
+						<control type="toggle"/>
+					</setting>
+					<setting id="show_trailers" type="boolean" label="30208">
+						<level>0</level>
+						<default>false</default>
+						<control type="toggle"/>
+					</setting>
+				</group>
+			</category>
 			<category id="youtube_account" label="30059">
 				<group id="1" label="">
 					<setting id="youtube_connect" type="action" label="30060" help="30076">
